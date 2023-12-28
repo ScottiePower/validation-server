@@ -1,17 +1,19 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import java.text.SimpleDateFormat
+import java.util.*
 
 plugins {
-	id("org.springframework.boot") version "3.2.0"
+	id("org.springframework.boot") version "3.2.1"
 	id("io.spring.dependency-management") version "1.1.4"
 	kotlin("jvm") version "1.9.21"
 	kotlin("plugin.spring") version "1.9.21"
 }
 
 group = "com.example"
-version = "0.0.1-SNAPSHOT"
+version = SimpleDateFormat("yyyyddMM.hhmmss").format(Date())
 
 java {
-	sourceCompatibility = JavaVersion.VERSION_17
+	sourceCompatibility = JavaVersion.VERSION_21
 }
 
 repositories {
@@ -19,6 +21,7 @@ repositories {
 }
 
 dependencies {
+	implementation("org.springframework.boot:spring-boot-starter-actuator")
 	implementation("org.springframework.boot:spring-boot-starter-web")
 	implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
 	implementation("org.jetbrains.kotlin:kotlin-reflect")
@@ -28,10 +31,37 @@ dependencies {
 tasks.withType<KotlinCompile> {
 	kotlinOptions {
 		freeCompilerArgs += "-Xjsr305=strict"
-		jvmTarget = "17"
+		jvmTarget = "21"
 	}
 }
 
-tasks.withType<Test> {
-	useJUnitPlatform()
+val builtImageNameOutput = File(buildDir, "applicationImageName")
+
+tasks {
+
+	withType<Test> { useJUnitPlatform() }
+
+	register("getImageName") { doLast { println(builtImageNameOutput.readText()) } }
+
+	bootBuildImage {
+		val registryUrl = "docker.io"
+		val registryUserName = "zimmy71"
+		val repositoryName = "zimmy71/validation-server"
+		imageName.set("$registryUrl/$repositoryName:${project.version}")
+		val registryPassword = getRequiredProperty("registryPassword")
+		docker {
+			publishRegistry {
+				url.set(registryUrl)
+				username.set(registryUserName)
+				password.set(registryPassword)
+			}
+		}
+		doLast { builtImageNameOutput.writeText(imageName.get()) }
+	}
+
+}
+
+fun Project.getRequiredProperty(property: String): String {
+	return this.findProperty(property) as String?
+		?: throw GradleException("'$property' must be defined")
 }
