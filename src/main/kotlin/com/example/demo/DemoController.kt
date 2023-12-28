@@ -28,9 +28,6 @@ class DemoController {
     @Autowired
     private val applicationAvailability: ApplicationAvailability? = null
 
-    @Autowired
-    private val applicationContext: ApplicationContext? = null
-
     @Value("\${SIDECAR_URI:http://localhost:8071/validate}") private val SIDECAR_URI: String? = null
 
     @RequestMapping(
@@ -61,9 +58,9 @@ class DemoController {
             val response =
                 restTemplate.postForEntity(SIDECAR_URI!!, validationRequest, ValidationResponse::class.java)
 
-            if (response.statusCode.isSameCodeAs(HttpStatus.NOT_FOUND)){
-                AvailabilityChangeEvent.publish(applicationContext, LivenessState.BROKEN);
-            }
+//            if (response.statusCode.isSameCodeAs(HttpStatus.NOT_FOUND)){
+//                AvailabilityChangeEvent.publish(applicationContext, LivenessState.BROKEN);
+//            }
 
             if (!response.statusCode.isError && response.body != null) {
                 val isRegoValid = response.body!!.valid
